@@ -92,13 +92,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AR\ARViewActivity.cs" />
-    <Compile Include="AR\BackgroundRenderer.cs" />
-    <Compile Include="AR\DisplayRotationHelper.cs" />
     <Compile Include="AR\PermissionService.cs" />
-    <Compile Include="AR\PlaneRenderer.cs" />
-    <Compile Include="AR\PointCloudRenderer.cs" />
-    <Compile Include="AR\ShaderUtil.cs" />
-    <Compile Include="AR\SimpleTapGestureDetector.cs" />
     <Compile Include="DependencyServices\ARAppImpl.cs" />
     <Compile Include="MainActivity.cs" />
     <Compile Include="Resources\Resource.designer.cs" />
