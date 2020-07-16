@@ -33,28 +33,13 @@ namespace ARTest.Droid
             global::Xamarin.Forms.Forms.Init(this, savedInstanceState);
             LoadApplication(new App());
 
-            //CheckAndRequestLocationPermission();
             bool isOK = await PermissionService.Current.CheckPermission();
         }
         public override void OnRequestPermissionsResult(int requestCode, string[] permissions, [GeneratedEnum] Android.Content.PM.Permission[] grantResults)
         {
-            //Xamarin.Essentials.Platform.OnRequestPermissionsResult(requestCode, permissions, grantResults);
             PermissionsImplementation.Current.OnRequestPermissionsResult(requestCode, permissions, grantResults);
-
             base.OnRequestPermissionsResult(requestCode, permissions, grantResults);
         }
-
-
-        //public async Task<PermissionStatus> CheckAndRequestLocationPermission()
-        //{
-        //    var status = await CrossPermissions.Current.CheckPermissionStatusAsync<CameraPermission>();
-        //    if (status != PermissionStatus.Granted)
-        //    {
-        //        status = await CrossPermissions.Current.RequestPermissionAsync<CameraPermission>();
-        //    }
-
-        //    return status;
-        //}
 
     }
 }
