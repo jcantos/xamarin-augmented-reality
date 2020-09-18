@@ -64,6 +64,7 @@
     <CodesignEntitlements>Entitlements.plist</CodesignEntitlements>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AR\AR2ViewController.cs" />
     <Compile Include="AR\ARViewController.cs" />
     <Compile Include="DependencyServices\ARAppImpl.cs" />
     <Compile Include="Main.cs" />

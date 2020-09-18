@@ -15,7 +15,7 @@ namespace ARTest.iOS.DependencyServices
         public void LaunchAR()
         {
             // This is in native code; invoke the native UI
-            ARViewController viewController = new ARViewController();
+            AR2ViewController viewController = new AR2ViewController();
             UIApplication.SharedApplication.KeyWindow.RootViewController.
               PresentViewController(viewController, true, null);
         }

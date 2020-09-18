@@ -16,10 +16,12 @@ namespace ARTest.iOS.AR
     {
         private readonly ARSCNView sceneView;
         int numberOfTaps = 0;
+        int numberMeditions = 0;
         SCNVector3 startPoint;
         SCNVector3 endPoint;
 
-        UILabel lblDistance;
+        UILabel lblD1;
+        UILabel lblH1;
 
         public ARViewController()
         {
@@ -29,19 +31,32 @@ namespace ARTest.iOS.AR
                 Delegate = new SceneViewDelegate()
             };
 
-            lblDistance = new UILabel();
-            lblDistance.TextColor = UIColor.Black;
-            lblDistance.BackgroundColor = UIColor.Yellow;
-            lblDistance.Font = UIFont.FromName("AppleSDGothicNeo-Bold", 16f);
+            lblD1 = new UILabel();
+            lblD1.TextColor = UIColor.Black;
+            lblD1.BackgroundColor = UIColor.Yellow;
+            lblD1.Font = UIFont.FromName("AppleSDGothicNeo-Bold", 16f);
 
-            var frame = lblDistance.Frame;
-            frame.X = 25;
-            frame.Y = 25;
-            frame.Width = 180;
-            frame.Height = 25;
-            lblDistance.Frame = frame;
+            lblH1 = new UILabel();
+            lblH1.TextColor = UIColor.Black;
+            lblH1.BackgroundColor = UIColor.Yellow;
+            lblH1.Font = UIFont.FromName("AppleSDGothicNeo-Bold", 16f);
 
-            this.sceneView.AddSubview(lblDistance);
+            var frameD1 = lblD1.Frame;
+            frameD1.X = 25;
+            frameD1.Y = 25;
+            frameD1.Width = 180;
+            frameD1.Height = 25;
+            lblD1.Frame = frameD1;
+
+            var frameH1 = lblH1.Frame;
+            frameH1.X = 25;
+            frameH1.Y = 60;
+            frameH1.Width = 180;
+            frameH1.Height = 25;
+            lblH1.Frame = frameH1;
+
+            this.sceneView.AddSubview(lblD1);
+            this.sceneView.AddSubview(lblH1);
             this.View.AddSubview(this.sceneView);
         }
 
@@ -59,36 +74,41 @@ namespace ARTest.iOS.AR
                 if (hitTest == null)
                     return;
 
-                InvokeOnMainThread(() =>
+                //InvokeOnMainThread(() =>
+                //{
+                //    lblDistance.Text = "Distancia: " + hitTest.Distance;
+                //});
+
+                numberOfTaps++;
+
+                if (numberOfTaps == 1)
                 {
-                    lblDistance.Text = "Distancia: " + hitTest.Distance;
-                });
+                    if (numberMeditions == 0)
+                        clearScene();
 
-                //numberOfTaps++;
+                    startPoint = new SCNVector3(hitTest.WorldTransform.Column3.X,
+                        hitTest.WorldTransform.Column3.Y,
+                        hitTest.WorldTransform.Column3.Z);
+                    addMarker(hitTest);
+                }
+                else
+                {
+                    numberOfTaps = 0;
+                    numberMeditions++;
 
-                //if (numberOfTaps == 1)
-                //{
-                //    clearScene();
+                    endPoint = new SCNVector3(hitTest.WorldTransform.Column3.X,
+                        hitTest.WorldTransform.Column3.Y,
+                        hitTest.WorldTransform.Column3.Z);
+                    addMarker(hitTest);
+                    addLineBetween(startPoint, endPoint);
 
-                //    startPoint = new SCNVector3(hitTest.WorldTransform.Column3.X,
-                //        hitTest.WorldTransform.Column3.Y,
-                //        hitTest.WorldTransform.Column3.Z);
-                //    addMarker(hitTest);
-                //}
-                //else
-                //{
-                //    numberOfTaps = 0;
+                    var distance = calculateDistance(startPoint, endPoint);
+                    var middlePoint = calculateCenter(startPoint, endPoint);
+                    addDistanceText(distance, middlePoint);
 
-                //    endPoint = new SCNVector3(hitTest.WorldTransform.Column3.X,
-                //        hitTest.WorldTransform.Column3.Y,
-                //        hitTest.WorldTransform.Column3.Z);
-                //    addMarker(hitTest);
-                //    addLineBetween(startPoint, endPoint);
-
-                //    var distance = calculateDistance(startPoint, endPoint);
-                //    var middlePoint = calculateCenter(startPoint, endPoint);
-                //    addDistanceText(distance, middlePoint);
-                //}
+                    if (numberMeditions > 1)
+                        numberMeditions = 0;
+                }
 
             });
 
@@ -100,12 +120,12 @@ namespace ARTest.iOS.AR
             foreach (var node in sceneView.Scene.RootNode.ChildNodes)
                 node.RemoveFromParentNode();
 
-            lblDistance.Text = "";
+            //lblDistance.Text = "";
         }
 
         private double calculateDistance(SCNVector3 vector1, SCNVector3 vector2)
         {
-            double reply= 0;
+            double reply = 0;
 
             var x0 = vector1.X;
             var x1 = vector2.X;
@@ -140,7 +160,7 @@ namespace ARTest.iOS.AR
         private void addMarker(ARHitTestResult hitTestResult)
         {
             var geometry = SCNSphere.Create((nfloat)0.01);
-            geometry.FirstMaterial.Diffuse.Contents = UIColor.Yellow;
+            geometry.FirstMaterial.Diffuse.Contents = UIColor.Red;
 
             var markerNode = SCNNode.Create();
             markerNode.Geometry = geometry;
@@ -165,7 +185,7 @@ namespace ARTest.iOS.AR
             var element = SCNGeometryElement.FromData(indexData, SCNGeometryPrimitiveType.Line, 1, sizeof(int));
 
             var lineGeometry = SCNGeometry.Create(new[] { source }, new[] { element });
-            lineGeometry.FirstMaterial.Diffuse.Contents = UIColor.Yellow;
+            lineGeometry.FirstMaterial.Diffuse.Contents = UIColor.Red;
             var lineNode = SCNNode.Create();
             lineNode.Geometry = lineGeometry;
             sceneView.Scene.RootNode.AddChildNode(lineNode);
@@ -173,14 +193,14 @@ namespace ARTest.iOS.AR
 
         private void addDistanceText(double distance, SCNVector3 point)
         {
-            string distanceString = Math.Round((distance * 100),0) + " cms";
+            string distanceString = Math.Round((distance * 100), 0) + " cms";
             var textGeometry = SCNText.Create(str: distanceString, extrusionDepth: 1);
             textGeometry.Font = UIFont.SystemFontOfSize(10);
             textGeometry.FirstMaterial.Diffuse.Contents = UIColor.Black;
 
             var textNode = SCNNode.Create();
             textNode.Geometry = textGeometry;
-            textNode.Position = new SCNVector3(point.X,point.Y, point.Z);
+            textNode.Position = new SCNVector3(point.X, point.Y, point.Z);
             textNode.Scale = new SCNVector3((float)0.001, (float)0.001, (float)0.001);
 
             // ajustamos la orientación del nodo a la vista de la cámara
@@ -189,9 +209,14 @@ namespace ARTest.iOS.AR
 
             sceneView.Scene.RootNode.AddChildNode(textNode);
 
-            //InvokeOnMainThread(() => {
-                //lblDistance.Text = "Distancia: " + distanceString;
-            //});
+            InvokeOnMainThread(() =>
+            {
+                double _distance = Math.Round(distance, 2);
+                if (numberMeditions == 1)
+                    lblD1.Text = "D1: " + _distance + "m";
+                else if (numberMeditions == 2)
+                    lblH1.Text = "H1: " + _distance + "m";
+            });
         }
 
         public override void ViewDidAppear(bool animated)
