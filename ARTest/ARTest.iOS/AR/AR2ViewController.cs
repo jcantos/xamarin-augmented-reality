@@ -19,11 +19,13 @@ namespace ARTest.iOS.AR
     {
         private readonly ARSCNView sceneView;
 
+        UILabel lblAyuda;
         UILabel lblDistancia;
         UILabel lblDistanciaRealTime;
 
         UIButton btnCalcular;
         UIButton btnMedicionCopa;
+        UIButton btnContinuar;
         UIImageView screenshot;
         int numTaps = 0;
         int numberMeditions = 0;
@@ -31,8 +33,8 @@ namespace ARTest.iOS.AR
         CGPoint pointB;
         Pizarra pizarra;
 
-        UILabel lblH1;
-        UILabel lblD1;
+        UILabel lblH;
+        UILabel lblD;
         MedidasAR medidas;
         SCNNode markerNode;
         SceneViewDelegate sceneViewDelegate;
@@ -61,12 +63,26 @@ namespace ARTest.iOS.AR
             btnCalcular.Hidden = true;
             btnCalcular.AddTarget(BtnCalcularEventHandler, UIControlEvent.TouchUpInside);
 
+            btnContinuar = new UIButton();
+            btnContinuar.BackgroundColor = new UIColor(red: 0.00f, green: 0.49f, blue: 0.38f, alpha: 1.00f);
+            btnContinuar.SetTitle("Continuar", UIControlState.Normal);
+            btnContinuar.SetTitleColor(UIColor.White, UIControlState.Normal);
+            btnContinuar.Hidden = true;
+            btnContinuar.AddTarget(BtnContinuarEventHandler, UIControlEvent.TouchUpInside);
+
             btnMedicionCopa = new UIButton();
             btnMedicionCopa.BackgroundColor = new UIColor(red: 0.00f, green: 0.49f, blue: 0.38f, alpha: 1.00f);
-            btnMedicionCopa.SetTitle("Medición copa", UIControlState.Normal);
+            btnMedicionCopa.SetTitle("Medir copa", UIControlState.Normal);
             btnMedicionCopa.SetTitleColor(UIColor.White, UIControlState.Normal);
             btnMedicionCopa.Hidden = true;
             btnMedicionCopa.AddTarget(BtnMedicionCopaEventHandler, UIControlEvent.TouchUpInside);
+
+            lblAyuda = new UILabel();
+            lblAyuda.TextColor = UIColor.White;
+            lblAyuda.BackgroundColor = UIColor.Orange;
+            lblAyuda.Font = UIFont.FromName("AppleSDGothicNeo-Bold", 16f);
+            lblAyuda.TextAlignment = UITextAlignment.Center;
+            lblAyuda.Hidden = false;
 
             lblDistancia = new UILabel();
             lblDistancia.TextColor = UIColor.Black;
@@ -78,61 +94,20 @@ namespace ARTest.iOS.AR
             lblDistanciaRealTime.TextColor = UIColor.Black;
             lblDistanciaRealTime.BackgroundColor = UIColor.Yellow;
             lblDistanciaRealTime.Font = UIFont.FromName("AppleSDGothicNeo-Bold", 16f);
+            lblDistanciaRealTime.TextAlignment = UITextAlignment.Center;
             lblDistanciaRealTime.Hidden = true;
 
-            lblH1 = new UILabel();
-            lblH1.TextColor = UIColor.Black;
-            lblH1.BackgroundColor = UIColor.Yellow;
-            lblH1.Font = UIFont.FromName("AppleSDGothicNeo-Bold", 16f);
-            lblH1.Hidden = true;
+            lblH = new UILabel();
+            lblH.TextColor = UIColor.Black;
+            lblH.BackgroundColor = UIColor.Yellow;
+            lblH.Font = UIFont.FromName("AppleSDGothicNeo-Bold", 16f);
+            lblH.Hidden = true;
 
-            lblD1 = new UILabel();
-            lblD1.TextColor = UIColor.Black;
-            lblD1.BackgroundColor = UIColor.Yellow;
-            lblD1.Font = UIFont.FromName("AppleSDGothicNeo-Bold", 16f);
-            lblD1.Hidden = true;
-
-            var frameBtn = btnCalcular.Frame;
-            frameBtn.X = 250;
-            frameBtn.Y = 25;
-            frameBtn.Width = 100;
-            frameBtn.Height = 48;
-            btnCalcular.Frame = frameBtn;
-
-            var frameBtnMedicionCopa = btnMedicionCopa.Frame;
-            frameBtnMedicionCopa.X = 250;
-            frameBtnMedicionCopa.Y = 25;
-            frameBtnMedicionCopa.Width = 100;
-            frameBtnMedicionCopa.Height = 48;
-            btnMedicionCopa.Frame = frameBtnMedicionCopa;
-
-            var frameDistancia = lblDistancia.Frame;
-            frameDistancia.X = 25;
-            frameDistancia.Y = 25;
-            frameDistancia.Width = 180;
-            frameDistancia.Height = 25;
-            lblDistancia.Frame = frameDistancia;
-
-            var frameDistanciaRealTime = lblDistanciaRealTime.Frame;
-            frameDistanciaRealTime.X = 25;
-            frameDistanciaRealTime.Y = 25;
-            frameDistanciaRealTime.Width = 180;
-            frameDistanciaRealTime.Height = 25;
-            lblDistanciaRealTime.Frame = frameDistanciaRealTime;
-
-            var frameH1 = lblH1.Frame;
-            frameH1.X = 25;
-            frameH1.Y = 60;
-            frameH1.Width = 180;
-            frameH1.Height = 25;
-            lblH1.Frame = frameH1;
-
-            var frameD1 = lblD1.Frame;
-            frameD1.X = 25;
-            frameD1.Y = 95;
-            frameD1.Width = 180;
-            frameD1.Height = 25;
-            lblD1.Frame = frameD1;
+            lblD = new UILabel();
+            lblD.TextColor = UIColor.Black;
+            lblD.BackgroundColor = UIColor.Yellow;
+            lblD.Font = UIFont.FromName("AppleSDGothicNeo-Bold", 16f);
+            lblD.Hidden = true;
 
             this.sceneView = new ARSCNView
             {
@@ -141,25 +116,45 @@ namespace ARTest.iOS.AR
             sceneViewDelegate = new SceneViewDelegate(sceneView, lblDistanciaRealTime, medidas);
             this.sceneView.Delegate = sceneViewDelegate;
 
-            this.screenshot.AddSubview(btnCalcular);
             this.screenshot.AddSubview(lblDistancia);
-            this.screenshot.AddSubview(lblH1);
-            this.screenshot.AddSubview(lblD1);
+            this.screenshot.AddSubview(lblH);
+            this.screenshot.AddSubview(lblD);
             this.sceneView.AddSubview(lblDistanciaRealTime);
             this.sceneView.AddSubview(btnMedicionCopa);
             this.View.AddSubview(this.screenshot);
             this.View.AddSubview(this.pizarra);
             this.View.AddSubview(this.sceneView);
+            this.View.AddSubview(this.lblAyuda);
+            this.View.AddSubview(btnContinuar);
+            this.View.AddSubview(btnCalcular);
         }
 
         public override void ViewDidLoad()
         {
             base.ViewDidLoad();
 
+            setFrames();
+            setTextoAyuda("Acérquese al olivo y seleccione el pie");
+            setTapSceneView();
+            setTapPizarra();
+        }
+
+        private void setFrames()
+        {
             this.sceneView.Frame = this.View.Frame;
             this.screenshot.Frame = this.View.Frame;
             this.pizarra.Frame = this.View.Frame;
-
+            this.lblAyuda.Frame = new CGRect(0, 0, this.View.Frame.Width, 30);
+            this.lblDistanciaRealTime.Frame = new CGRect(0, 30, this.View.Frame.Width, 30);
+            this.btnCalcular.Frame = new CGRect(10, this.View.Frame.Height - 135, this.View.Frame.Width - 20, 58);
+            this.btnMedicionCopa.Frame = new CGRect(10, this.View.Frame.Height - 135, this.View.Frame.Width - 20, 58);
+            this.btnContinuar.Frame = new CGRect(10, this.View.Frame.Height - 135, this.View.Frame.Width - 20, 58);
+            this.lblDistancia.Frame = new CGRect(10, 35, 180, 25);
+            this.lblH.Frame = new CGRect(25, 60, 180, 25);
+            this.lblD.Frame = new CGRect(25, 95, 180, 25);
+        }
+        private void setTapSceneView()
+        {
             var tapSceneView = new UITapGestureRecognizer((args) =>
             {
                 var point = args.LocationInView(sceneView);
@@ -177,8 +172,13 @@ namespace ARTest.iOS.AR
                 clearScene();
                 addMarker(hitTest);
                 habilitarMedicionCopa();
+                setTextoAyuda("Aléjese hasta encuadrar olivo y pulse 'Medir copa'");
             });
 
+            this.sceneView.AddGestureRecognizer(tapSceneView);
+        }
+        private void setTapPizarra()
+        {
             var tapPizarra = new UITapGestureRecognizer((args) =>
             {
                 numTaps++;
@@ -186,9 +186,6 @@ namespace ARTest.iOS.AR
                 if (numTaps == 1)
                 {
                     pointA = args.LocationInView(args.View);
-
-                    if (numberMeditions == 0)
-                        clearPizarra();
                 }
                 else if (numTaps == 2)
                 {
@@ -200,14 +197,18 @@ namespace ARTest.iOS.AR
 
                     var distance = calculateDistance(pointA, pointB, medidas.DistanciaAlArbol);
                     addDistanceText(distance);
-
-                    if (numberMeditions > 1)
-                        numberMeditions = 0;
                 }
             });
 
             this.pizarra.AddGestureRecognizer(tapPizarra);
-            this.sceneView.AddGestureRecognizer(tapSceneView);
+        }
+
+        private void setTextoAyuda(string texto)
+        {
+            InvokeOnMainThread(() =>
+            {
+                this.lblAyuda.Text = texto;
+            });
         }
 
         private void clearScene()
@@ -221,12 +222,11 @@ namespace ARTest.iOS.AR
 
         private void clearPizarra()
         {
-            InvokeOnMainThread(() =>
-            {
-                btnCalcular.Hidden = true;
-                lblH1.Hidden = true;
-                lblD1.Hidden = true;
-            });
+            btnContinuar.Hidden = true;
+            btnCalcular.Hidden = true;
+            lblH.Hidden = true;
+            lblD.Hidden = true;
+            pizarra.UserInteractionEnabled = true;
         }
 
         private void addMarker(ARHitTestResult hitTestResult)
@@ -280,15 +280,34 @@ namespace ARTest.iOS.AR
                 if (numberMeditions == 1)
                 {
                     medidas.CopaH = distance;
-                    lblH1.Text = "H1: " + distanceString;
-                    lblH1.Hidden = false;
+                    lblH.Text = "H1: " + distanceString;
+                    lblH.Hidden = false;
+                    setTextoAyuda("Ahora indique D1");
                 }
                 else if (numberMeditions == 2)
                 {
                     medidas.CopaD1 = distance;
-                    lblD1.Text = "D1: " + distanceString;
-                    lblD1.Hidden = false;
+                    lblD.Text = "D1: " + distanceString;
+                    lblD.Hidden = false;
+                    pizarra.UserInteractionEnabled = false;
+                    btnContinuar.Hidden = false;
+                    setTextoAyuda("Pulse botón Continuar para medir D2");
+                }
+                else if (numberMeditions == 3)
+                {
+                    medidas.CopaH = (distance + medidas.CopaH) / 2;
+                    lblH.Text = "H2: " + distanceString;
+                    lblH.Hidden = false;
+                    setTextoAyuda("Ahora indique D2");
+                }
+                else if (numberMeditions == 4)
+                {
+                    medidas.CopaD2 = distance;
+                    lblD.Text = "D2: " + distanceString;
+                    lblD.Hidden = false;
+                    pizarra.UserInteractionEnabled = false;
                     btnCalcular.Hidden = false;
+                    setTextoAyuda("¡Listo!, pulse sobre el botón Calcular");
                 }
             });
         }
@@ -309,7 +328,6 @@ namespace ARTest.iOS.AR
         public override void ViewDidDisappear(bool animated)
         {
             base.ViewDidDisappear(animated);
-
             sceneView.Session.Pause();
         }
 
@@ -319,7 +337,7 @@ namespace ARTest.iOS.AR
                 return;
 
             //ARService.Current.OnCapturarMedidas(medidas);
-            //this.DismissModalViewController(true);
+            this.DismissModalViewController(true);
         }
 
         public void BtnMedicionCopaEventHandler(object sender, EventArgs e)
@@ -330,7 +348,25 @@ namespace ARTest.iOS.AR
                 screenshot.Image = image;
                 screenshot.Hidden = false;
                 pizarra.Hidden = false;
+                pizarra.Image = null;
                 sceneView.Hidden = true;
+
+                if (numberMeditions == 0)
+                    setTextoAyuda("Ahora indique H1");
+                else if(numberMeditions == 2)
+                    setTextoAyuda("Ahora indique H2");
+            });
+        }
+
+        public void BtnContinuarEventHandler(object sender, EventArgs e)
+        {
+            InvokeOnMainThread(() =>
+            {
+                screenshot.Hidden = true;
+                pizarra.Hidden = true;
+                sceneView.Hidden = false;
+                setTextoAyuda("Sitúese en perpendicular y pulse 'Medir copa'");
+                clearPizarra();
             });
         }
 
