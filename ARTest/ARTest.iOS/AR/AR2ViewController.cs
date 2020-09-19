@@ -20,7 +20,6 @@ namespace ARTest.iOS.AR
         private readonly ARSCNView sceneView;
 
         UILabel lblAyuda;
-        UILabel lblDistancia;
         UILabel lblDistanciaRealTime;
 
         UIButton btnCalcular;
@@ -32,6 +31,7 @@ namespace ARTest.iOS.AR
         CGPoint pointA;
         CGPoint pointB;
         Pizarra pizarra;
+        bool pizarraEnabled;
 
         UILabel lblH;
         UILabel lblD;
@@ -84,12 +84,6 @@ namespace ARTest.iOS.AR
             lblAyuda.TextAlignment = UITextAlignment.Center;
             lblAyuda.Hidden = false;
 
-            lblDistancia = new UILabel();
-            lblDistancia.TextColor = UIColor.Black;
-            lblDistancia.BackgroundColor = UIColor.Yellow;
-            lblDistancia.Font = UIFont.FromName("AppleSDGothicNeo-Bold", 16f);
-            lblDistancia.Hidden = true;
-
             lblDistanciaRealTime = new UILabel();
             lblDistanciaRealTime.TextColor = UIColor.Black;
             lblDistanciaRealTime.BackgroundColor = UIColor.Yellow;
@@ -116,7 +110,8 @@ namespace ARTest.iOS.AR
             sceneViewDelegate = new SceneViewDelegate(sceneView, lblDistanciaRealTime, medidas);
             this.sceneView.Delegate = sceneViewDelegate;
 
-            this.screenshot.AddSubview(lblDistancia);
+            this.pizarra.AddSubview(btnContinuar);
+            this.pizarra.AddSubview(btnCalcular);
             this.screenshot.AddSubview(lblH);
             this.screenshot.AddSubview(lblD);
             this.sceneView.AddSubview(lblDistanciaRealTime);
@@ -125,8 +120,6 @@ namespace ARTest.iOS.AR
             this.View.AddSubview(this.pizarra);
             this.View.AddSubview(this.sceneView);
             this.View.AddSubview(this.lblAyuda);
-            this.View.AddSubview(btnContinuar);
-            this.View.AddSubview(btnCalcular);
         }
 
         public override void ViewDidLoad()
@@ -141,15 +134,14 @@ namespace ARTest.iOS.AR
 
         private void setFrames()
         {
-            this.sceneView.Frame = this.View.Frame;
+            this.sceneView.Frame = new CGRect(0, 30, this.View.Frame.Width, this.View.Frame.Height-30);
             this.screenshot.Frame = this.View.Frame;
             this.pizarra.Frame = this.View.Frame;
             this.lblAyuda.Frame = new CGRect(0, 0, this.View.Frame.Width, 30);
-            this.lblDistanciaRealTime.Frame = new CGRect(0, 30, this.View.Frame.Width, 30);
-            this.btnCalcular.Frame = new CGRect(10, this.View.Frame.Height - 135, this.View.Frame.Width - 20, 58);
-            this.btnMedicionCopa.Frame = new CGRect(10, this.View.Frame.Height - 135, this.View.Frame.Width - 20, 58);
-            this.btnContinuar.Frame = new CGRect(10, this.View.Frame.Height - 135, this.View.Frame.Width - 20, 58);
-            this.lblDistancia.Frame = new CGRect(10, 35, 180, 25);
+            this.lblDistanciaRealTime.Frame = new CGRect(0, 0, this.View.Frame.Width, 30);
+            this.btnCalcular.Frame = new CGRect(10, this.View.Frame.Height - 165, this.View.Frame.Width - 20, 58);
+            this.btnMedicionCopa.Frame = new CGRect(10, this.View.Frame.Height - 195, this.View.Frame.Width - 20, 58);
+            this.btnContinuar.Frame = new CGRect(10, this.View.Frame.Height - 165, this.View.Frame.Width - 20, 58);
             this.lblH.Frame = new CGRect(25, 60, 180, 25);
             this.lblD.Frame = new CGRect(25, 95, 180, 25);
         }
@@ -179,8 +171,13 @@ namespace ARTest.iOS.AR
         }
         private void setTapPizarra()
         {
+            pizarraEnabled = true;
+
             var tapPizarra = new UITapGestureRecognizer((args) =>
             {
+                if (!pizarraEnabled)
+                    return;
+
                 numTaps++;
 
                 if (numTaps == 1)
@@ -213,11 +210,17 @@ namespace ARTest.iOS.AR
 
         private void clearScene()
         {
-            foreach (var node in sceneView.Scene.RootNode.ChildNodes)
-                node.RemoveFromParentNode();
+            InvokeOnMainThread(() =>
+            {
+                if (markerNode != null)
+                {
+                    markerNode.RemoveFromParentNode();
+                    markerNode = null;
 
-            if (sceneViewDelegate != null)
-                sceneViewDelegate.MarkerNode = null;
+                    if (sceneViewDelegate != null)
+                        sceneViewDelegate.MarkerNode = null;
+                }
+            });
         }
 
         private void clearPizarra()
@@ -226,7 +229,7 @@ namespace ARTest.iOS.AR
             btnCalcular.Hidden = true;
             lblH.Hidden = true;
             lblD.Hidden = true;
-            pizarra.UserInteractionEnabled = true;
+            pizarraEnabled = true;
         }
 
         private void addMarker(ARHitTestResult hitTestResult)
@@ -240,7 +243,10 @@ namespace ARTest.iOS.AR
                 hitTestResult.WorldTransform.Column3.Y,
                 hitTestResult.WorldTransform.Column3.Z);
 
-            sceneView.Scene.RootNode.AddChildNode(markerNode);
+            InvokeOnMainThread(() =>
+            {
+                sceneView.Scene.RootNode.AddChildNode(markerNode);
+            });
 
             if (sceneViewDelegate != null)
                 sceneViewDelegate.MarkerNode = markerNode;
@@ -289,7 +295,7 @@ namespace ARTest.iOS.AR
                     medidas.CopaD1 = distance;
                     lblD.Text = "D1: " + distanceString;
                     lblD.Hidden = false;
-                    pizarra.UserInteractionEnabled = false;
+                    pizarraEnabled = false;
                     btnContinuar.Hidden = false;
                     setTextoAyuda("Pulse botón Continuar para medir D2");
                 }
@@ -305,7 +311,7 @@ namespace ARTest.iOS.AR
                     medidas.CopaD2 = distance;
                     lblD.Text = "D2: " + distanceString;
                     lblD.Hidden = false;
-                    pizarra.UserInteractionEnabled = false;
+                    pizarraEnabled = false;
                     btnCalcular.Hidden = false;
                     setTextoAyuda("¡Listo!, pulse sobre el botón Calcular");
                 }
