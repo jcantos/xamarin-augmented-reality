@@ -21,6 +21,7 @@ namespace ARTest.iOS.AR
 
         UILabel lblAyuda;
         UILabel lblDistanciaRealTime;
+        UILabel lblMidiendo;
 
         UIButton btnCalcular;
         UIButton btnMedicionCopa;
@@ -84,6 +85,13 @@ namespace ARTest.iOS.AR
             lblAyuda.TextAlignment = UITextAlignment.Center;
             lblAyuda.Hidden = false;
 
+            lblMidiendo = new UILabel();
+            lblMidiendo.TextColor = UIColor.Black;
+            lblMidiendo.BackgroundColor = UIColor.Yellow;
+            lblMidiendo.Font = UIFont.FromName("AppleSDGothicNeo-Bold", 16f);
+            lblMidiendo.TextAlignment = UITextAlignment.Center;
+            lblMidiendo.Hidden = true;
+
             lblDistanciaRealTime = new UILabel();
             lblDistanciaRealTime.TextColor = UIColor.Black;
             lblDistanciaRealTime.BackgroundColor = UIColor.Yellow;
@@ -112,6 +120,7 @@ namespace ARTest.iOS.AR
 
             this.pizarra.AddSubview(btnContinuar);
             this.pizarra.AddSubview(btnCalcular);
+            this.screenshot.AddSubview(lblMidiendo);
             this.screenshot.AddSubview(lblH);
             this.screenshot.AddSubview(lblD);
             this.sceneView.AddSubview(lblDistanciaRealTime);
@@ -142,8 +151,9 @@ namespace ARTest.iOS.AR
             this.btnCalcular.Frame = new CGRect(10, this.View.Frame.Height - 165, this.View.Frame.Width - 20, 58);
             this.btnMedicionCopa.Frame = new CGRect(10, this.View.Frame.Height - 195, this.View.Frame.Width - 20, 58);
             this.btnContinuar.Frame = new CGRect(10, this.View.Frame.Height - 165, this.View.Frame.Width - 20, 58);
-            this.lblH.Frame = new CGRect(25, 60, 180, 25);
-            this.lblD.Frame = new CGRect(25, 95, 180, 25);
+            this.lblH.Frame = new CGRect(25, 70, 100, 25);
+            this.lblD.Frame = new CGRect(25, 105, 100, 25);
+            this.lblMidiendo.Frame = new CGRect(0, 30, this.View.Frame.Width, 30);
         }
         private void setTapSceneView()
         {
@@ -182,14 +192,18 @@ namespace ARTest.iOS.AR
 
                 if (numTaps == 1)
                 {
+                    setVisibilityMidiendo(true);
                     pointA = args.LocationInView(args.View);
+                    pizarra.DrawPoint(pointA);
                 }
                 else if (numTaps == 2)
                 {
+                    setVisibilityMidiendo(false);
                     pointB = args.LocationInView(args.View);
                     numTaps = 0;
                     numberMeditions++;
 
+                    pizarra.DrawPoint(pointB);
                     pizarra.DrawLine(pointA, pointB);
 
                     var distance = calculateDistance(pointA, pointB, medidas.DistanciaAlArbol);
@@ -198,6 +212,23 @@ namespace ARTest.iOS.AR
             });
 
             this.pizarra.AddGestureRecognizer(tapPizarra);
+        }
+
+        private void setVisibilityMidiendo(bool visible)
+        {
+            InvokeOnMainThread(() =>
+            {
+                if (visible)
+                {
+                    lblMidiendo.Text = "Pulse para indicar punto final ...";
+                    lblMidiendo.Hidden = false;
+                }
+                else
+                {
+                    lblMidiendo.Text = "";
+                    lblMidiendo.Hidden = true;
+                }
+            });
         }
 
         private void setTextoAyuda(string texto)
@@ -438,6 +469,21 @@ namespace ARTest.iOS.AR
 
         class Pizarra : UIImageView
         {
+            public void DrawPoint(CGPoint point)
+            {
+                UIGraphics.BeginImageContext(this.Frame.Size);
+                CGContext context = UIGraphics.GetCurrentContext();
+
+                var rect = new CGRect(point.X, point.Y, 20, 20);
+                context.SetFillColor(UIColor.Red.CGColor);
+                context.FillEllipseInRect(rect);
+
+                UIImage result = UIGraphics.GetImageFromCurrentImageContext();
+                Image = result;
+
+                UIGraphics.EndImageContext();
+            }
+
             public void DrawLine(CGPoint pointA, CGPoint pointB)
             {
                 UIGraphics.BeginImageContext(this.Frame.Size);
