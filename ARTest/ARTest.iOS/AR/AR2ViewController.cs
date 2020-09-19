@@ -23,6 +23,7 @@ namespace ARTest.iOS.AR
         UILabel lblDistanciaRealTime;
 
         UIButton btnCalcular;
+        UIButton btnMedicionCopa;
         UIImageView screenshot;
         int numTaps = 0;
         int numberMeditions = 0;
@@ -32,7 +33,6 @@ namespace ARTest.iOS.AR
 
         UILabel lblH1;
         UILabel lblD1;
-        UILabel lblD2;
         MedidasAR medidas;
         SCNNode markerNode;
         SceneViewDelegate sceneViewDelegate;
@@ -59,6 +59,14 @@ namespace ARTest.iOS.AR
             btnCalcular.SetTitle("Calcular", UIControlState.Normal);
             btnCalcular.SetTitleColor(UIColor.White, UIControlState.Normal);
             btnCalcular.Hidden = true;
+            btnCalcular.AddTarget(BtnCalcularEventHandler, UIControlEvent.TouchUpInside);
+
+            btnMedicionCopa = new UIButton();
+            btnMedicionCopa.BackgroundColor = new UIColor(red: 0.00f, green: 0.49f, blue: 0.38f, alpha: 1.00f);
+            btnMedicionCopa.SetTitle("Medición copa", UIControlState.Normal);
+            btnMedicionCopa.SetTitleColor(UIColor.White, UIControlState.Normal);
+            btnMedicionCopa.Hidden = true;
+            btnMedicionCopa.AddTarget(BtnMedicionCopaEventHandler, UIControlEvent.TouchUpInside);
 
             lblDistancia = new UILabel();
             lblDistancia.TextColor = UIColor.Black;
@@ -84,18 +92,19 @@ namespace ARTest.iOS.AR
             lblD1.Font = UIFont.FromName("AppleSDGothicNeo-Bold", 16f);
             lblD1.Hidden = true;
 
-            lblD2 = new UILabel();
-            lblD2.TextColor = UIColor.Black;
-            lblD2.BackgroundColor = UIColor.Yellow;
-            lblD2.Font = UIFont.FromName("AppleSDGothicNeo-Bold", 16f);
-            lblD2.Hidden = true;
-
             var frameBtn = btnCalcular.Frame;
             frameBtn.X = 250;
             frameBtn.Y = 25;
             frameBtn.Width = 100;
             frameBtn.Height = 48;
             btnCalcular.Frame = frameBtn;
+
+            var frameBtnMedicionCopa = btnMedicionCopa.Frame;
+            frameBtnMedicionCopa.X = 250;
+            frameBtnMedicionCopa.Y = 25;
+            frameBtnMedicionCopa.Width = 100;
+            frameBtnMedicionCopa.Height = 48;
+            btnMedicionCopa.Frame = frameBtnMedicionCopa;
 
             var frameDistancia = lblDistancia.Frame;
             frameDistancia.X = 25;
@@ -125,13 +134,6 @@ namespace ARTest.iOS.AR
             frameD1.Height = 25;
             lblD1.Frame = frameD1;
 
-            var frameD2 = lblD2.Frame;
-            frameD2.X = 25;
-            frameD2.Y = 130;
-            frameD2.Width = 180;
-            frameD2.Height = 25;
-            lblD2.Frame = frameD2;
-
             this.sceneView = new ARSCNView
             {
                 DebugOptions = ARSCNDebugOptions.ShowFeaturePoints
@@ -143,8 +145,8 @@ namespace ARTest.iOS.AR
             this.screenshot.AddSubview(lblDistancia);
             this.screenshot.AddSubview(lblH1);
             this.screenshot.AddSubview(lblD1);
-            this.screenshot.AddSubview(lblD2);
             this.sceneView.AddSubview(lblDistanciaRealTime);
+            this.sceneView.AddSubview(btnMedicionCopa);
             this.View.AddSubview(this.screenshot);
             this.View.AddSubview(this.pizarra);
             this.View.AddSubview(this.sceneView);
@@ -174,20 +176,7 @@ namespace ARTest.iOS.AR
 
                 clearScene();
                 addMarker(hitTest);
-
-                //InvokeOnMainThread(() =>
-                //{
-                //    double distancia = Math.Round(hitTest.Distance, 2);
-                //    lblDistanciaRealTime.Hidden = false;
-                //    lblDistanciaRealTime.Text = "Distancia: " + distancia + " ms";
-                //    medidas.DistanciaAlArbol = hitTest.Distance;
-
-                //    //var image = sceneView.Snapshot();
-                //    //screenshot.Image = image;
-                //    //screenshot.Hidden = false;
-                //    //pizarra.Hidden = false;
-                //    //sceneView.Hidden = true;
-                //});
+                habilitarMedicionCopa();
             });
 
             var tapPizarra = new UITapGestureRecognizer((args) =>
@@ -199,7 +188,7 @@ namespace ARTest.iOS.AR
                     pointA = args.LocationInView(args.View);
 
                     if (numberMeditions == 0)
-                        clearScene();
+                        clearPizarra();
                 }
                 else if (numTaps == 2)
                 {
@@ -212,7 +201,7 @@ namespace ARTest.iOS.AR
                     var distance = calculateDistance(pointA, pointB, medidas.DistanciaAlArbol);
                     addDistanceText(distance);
 
-                    if (numberMeditions > 2)
+                    if (numberMeditions > 1)
                         numberMeditions = 0;
                 }
             });
@@ -228,13 +217,15 @@ namespace ARTest.iOS.AR
 
             if (sceneViewDelegate != null)
                 sceneViewDelegate.MarkerNode = null;
+        }
 
+        private void clearPizarra()
+        {
             InvokeOnMainThread(() =>
             {
                 btnCalcular.Hidden = true;
                 lblH1.Hidden = true;
                 lblD1.Hidden = true;
-                lblD2.Hidden = true;
             });
         }
 
@@ -253,6 +244,14 @@ namespace ARTest.iOS.AR
 
             if (sceneViewDelegate != null)
                 sceneViewDelegate.MarkerNode = markerNode;
+        }
+
+        private void habilitarMedicionCopa()
+        {
+            InvokeOnMainThread(() =>
+            {
+                btnMedicionCopa.Hidden = false;
+            });
         }
 
         private double calculateDistance(CGPoint pointA, CGPoint pointB, double distanciaAlArbolEnMetros)
@@ -289,12 +288,6 @@ namespace ARTest.iOS.AR
                     medidas.CopaD1 = distance;
                     lblD1.Text = "D1: " + distanceString;
                     lblD1.Hidden = false;
-                }
-                else if (numberMeditions == 3)
-                {
-                    medidas.CopaD2 = distance;
-                    lblD2.Text = "D2: " + distanceString;
-                    lblD2.Hidden = false;
                     btnCalcular.Hidden = false;
                 }
             });
@@ -318,6 +311,27 @@ namespace ARTest.iOS.AR
             base.ViewDidDisappear(animated);
 
             sceneView.Session.Pause();
+        }
+
+        public void BtnCalcularEventHandler(object sender, EventArgs e)
+        {
+            if (medidas == null)
+                return;
+
+            //ARService.Current.OnCapturarMedidas(medidas);
+            //this.DismissModalViewController(true);
+        }
+
+        public void BtnMedicionCopaEventHandler(object sender, EventArgs e)
+        {
+            InvokeOnMainThread(() =>
+            {
+                var image = sceneView.Snapshot();
+                screenshot.Image = image;
+                screenshot.Hidden = false;
+                pizarra.Hidden = false;
+                sceneView.Hidden = true;
+            });
         }
 
         class SceneViewDelegate : ARSCNViewDelegate
