@@ -11,6 +11,7 @@ using System.Linq;
 using CoreGraphics;
 using ARTest.Models;
 using Xamarin.Forms;
+using System.Diagnostics;
 
 namespace ARTest.iOS.AR
 {
@@ -22,6 +23,7 @@ namespace ARTest.iOS.AR
         UILabel lblAyuda;
         UILabel lblDistanciaRealTime;
         UILabel lblMidiendo;
+        UILabel lblEstadoCamara;
 
         UIButton btnCalcular;
         UIButton btnMedicionCopa;
@@ -85,6 +87,14 @@ namespace ARTest.iOS.AR
             lblAyuda.TextAlignment = UITextAlignment.Center;
             lblAyuda.Hidden = false;
 
+            lblEstadoCamara = new UILabel();
+            lblEstadoCamara.TextColor = UIColor.White;
+            lblEstadoCamara.BackgroundColor = UIColor.Red;
+            lblEstadoCamara.Font = UIFont.FromName("AppleSDGothicNeo-Bold", 19f);
+            lblEstadoCamara.TextAlignment = UITextAlignment.Center;
+            lblEstadoCamara.Hidden = false;
+            lblEstadoCamara.Text = "Mueva el teléfono realizando círculos";
+
             lblMidiendo = new UILabel();
             lblMidiendo.TextColor = UIColor.Black;
             lblMidiendo.BackgroundColor = UIColor.Yellow;
@@ -115,7 +125,10 @@ namespace ARTest.iOS.AR
             {
                 DebugOptions = ARSCNDebugOptions.ShowFeaturePoints
             };
-            sceneViewDelegate = new SceneViewDelegate(sceneView, lblDistanciaRealTime, medidas);
+            sceneViewDelegate = new SceneViewDelegate(sceneView, 
+                lblDistanciaRealTime, 
+                lblEstadoCamara, 
+                medidas);
             this.sceneView.Delegate = sceneViewDelegate;
 
             this.pizarra.AddSubview(btnContinuar);
@@ -125,6 +138,7 @@ namespace ARTest.iOS.AR
             this.screenshot.AddSubview(lblD);
             this.sceneView.AddSubview(lblDistanciaRealTime);
             this.sceneView.AddSubview(btnMedicionCopa);
+            this.sceneView.AddSubview(lblEstadoCamara);
             this.View.AddSubview(this.screenshot);
             this.View.AddSubview(this.pizarra);
             this.View.AddSubview(this.sceneView);
@@ -143,7 +157,7 @@ namespace ARTest.iOS.AR
 
         private void setFrames()
         {
-            this.sceneView.Frame = new CGRect(0, 30, this.View.Frame.Width, this.View.Frame.Height-30);
+            this.sceneView.Frame = new CGRect(0, 30, this.View.Frame.Width, this.View.Frame.Height - 30);
             this.screenshot.Frame = this.View.Frame;
             this.pizarra.Frame = this.View.Frame;
             this.lblAyuda.Frame = new CGRect(0, 0, this.View.Frame.Width, 30);
@@ -154,6 +168,7 @@ namespace ARTest.iOS.AR
             this.lblH.Frame = new CGRect(25, 70, 100, 25);
             this.lblD.Frame = new CGRect(25, 105, 100, 25);
             this.lblMidiendo.Frame = new CGRect(0, 30, this.View.Frame.Width, 30);
+            this.lblEstadoCamara.Frame = new CGRect(20, (this.View.Frame.Height / 2) - 50, this.View.Frame.Width - 40, 50);
         }
         private void setTapSceneView()
         {
@@ -293,7 +308,7 @@ namespace ARTest.iOS.AR
 
         private double calculateDistance(CGPoint pointA, CGPoint pointB, double distanciaAlArbolEnMetros)
         {
-            const double CALIBRACION = 0.002;
+            const double CALIBRACION = 0.0015;
             double reply = 0;
 
             var x0 = pointA.X;
@@ -390,7 +405,7 @@ namespace ARTest.iOS.AR
 
                 if (numberMeditions == 0)
                     setTextoAyuda("Ahora indique H1");
-                else if(numberMeditions == 2)
+                else if (numberMeditions == 2)
                     setTextoAyuda("Ahora indique H2");
             });
         }
@@ -411,16 +426,33 @@ namespace ARTest.iOS.AR
         {
             ARSCNView sceneView;
             UILabel lblDistancia;
+            UILabel lblEstadoCamara;
             MedidasAR medidas;
             DateTime lastUpdated = DateTime.MinValue;
 
             public SCNNode MarkerNode { get; set; }
 
-            public SceneViewDelegate(ARSCNView _sceneView, UILabel _lblDistancia, MedidasAR _medidas)
+            public SceneViewDelegate(ARSCNView _sceneView, UILabel _lblDistancia, UILabel _lblEstadoCamara, MedidasAR _medidas)
             {
                 sceneView = _sceneView;
                 lblDistancia = _lblDistancia;
+                lblEstadoCamara = _lblEstadoCamara;
                 medidas = _medidas;
+            }
+            public override void CameraDidChangeTrackingState(ARSession session, ARCamera camera)
+            {
+                var state = camera.TrackingState;
+                bool hidden = false;
+
+                if (state == ARTrackingState.NotAvailable || state == ARTrackingState.Limited)
+                    hidden = false;
+                if (state == ARTrackingState.Normal)
+                    hidden = true;
+
+                InvokeOnMainThread(() =>
+                {
+                    lblEstadoCamara.Hidden = hidden;
+                });
             }
             public override void Update(ISCNSceneRenderer renderer, double timeInSeconds)
             {
@@ -491,7 +523,7 @@ namespace ARTest.iOS.AR
                 context.SetLineWidth(4);
                 UIColor.Blue.SetFill();
                 UIColor.Red.SetStroke();
-                    
+
                 var currentPath = new CGPath();
                 CGPoint[] points = new CGPoint[2];
                 points[0] = pointA;

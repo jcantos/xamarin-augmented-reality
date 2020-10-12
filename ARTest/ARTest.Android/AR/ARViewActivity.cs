@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -19,12 +20,15 @@ using Android.Support.V4.Util;
 using Android.Util;
 using Android.Views;
 using Android.Widget;
+using ARTest.Models;
 using Google.AR.Core;
 using Google.AR.Core.Exceptions;
 using Google.AR.Sceneform;
 using Google.AR.Sceneform.Math;
 using Google.AR.Sceneform.Rendering;
 using Google.AR.Sceneform.UX;
+using Java.IO;
+using Java.Nio;
 using Java.Util;
 using Java.Util.Concurrent.Atomic;
 using Javax.Microedition.Khronos.Opengles;
@@ -42,9 +46,22 @@ namespace ARTest.Droid.AR
 
         ArFragment arFragment;
         AnchorNode currentAnchorNode;
-        TextView tvDistance;
         ModelRenderable cubeRenderable;
         Anchor currentAnchor = null;
+
+        ImageView screenshot;
+        ImageView pizarra;
+        TextView lblDistanciaRealTime;
+        Button btnCalcular;
+        Button btnContinuar;
+        Button btnMedicionCopa;
+        TextView lblAyuda;
+        TextView lblMidiendo;
+        TextView lblH;
+        TextView lblD;
+
+        MedidasAR medidas;
+        int numberMeditions = 0;
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -54,22 +71,103 @@ namespace ARTest.Droid.AR
 
             if (!checkIsSupportedDeviceOrFinish())
             {
-                Toast.MakeText(this, "Device not supported", ToastLength.Long).Show();
+                Toast.MakeText(this, "Dispositivo no soportado", ToastLength.Long).Show();
             }
 
+            medidas = new MedidasAR();
             SetContentView(Resource.Layout.ar_view);
             arFragment = (ArFragment)SupportFragmentManager.FindFragmentById(Resource.Id.ux_fragment);
-            tvDistance = (TextView)FindViewById(Resource.Id.tvDistance);
+            lblDistanciaRealTime = (TextView)FindViewById(Resource.Id.lblDistanciaRealTime);
+            btnCalcular = (Button)FindViewById(Resource.Id.btnCalcular);
+            btnContinuar = (Button)FindViewById(Resource.Id.btnContinuar);
+            btnMedicionCopa = (Button)FindViewById(Resource.Id.btnMedicionCopa);
+            lblAyuda = (TextView)FindViewById(Resource.Id.lblAyuda);
+            lblMidiendo = (TextView)FindViewById(Resource.Id.lblMidiendo);
+            lblH = (TextView)FindViewById(Resource.Id.lblH);
+            lblD = (TextView)FindViewById(Resource.Id.lblD);
+            screenshot = (ImageView)FindViewById(Resource.Id.screenshot);
+            pizarra = (ImageView)FindViewById(Resource.Id.pizarra);
 
             initModel();
 
             arFragment.SetOnTapArPlaneListener(this);
-
         }
         protected override void OnResume()
         {
-
             base.OnResume();
+
+            setBindings();
+            setFrames();
+            setTextoAyuda("Acérquese al olivo y seleccione el pie");
+        }
+        private void setBindings()
+        {
+            btnMedicionCopa.Click += ((IntentSender, arg) =>
+            {
+                RunOnUiThread(() =>
+                {
+                    var image = arFragment.ArSceneView.ArFrame.AcquireCameraImage();
+
+                    var cameraPlaneY = image.GetPlanes()[0].Buffer;
+                    var cameraPlaneU = image.GetPlanes()[1].Buffer;
+                    var cameraPlaneV = image.GetPlanes()[2].Buffer;
+
+                    var compositeByteArray = new byte[cameraPlaneY.Capacity() + cameraPlaneU.Capacity() + cameraPlaneV.Capacity()];
+
+                    cameraPlaneY.Get(compositeByteArray, 0, cameraPlaneY.Capacity());
+                    cameraPlaneU.Get(compositeByteArray, cameraPlaneY.Capacity(), cameraPlaneU.Capacity());
+                    cameraPlaneV.Get(compositeByteArray, cameraPlaneY.Capacity() + cameraPlaneU.Capacity(), cameraPlaneV.Capacity());
+
+                    var baOutputStream = new MemoryStream();
+                    var yuvImage = new YuvImage(compositeByteArray, ImageFormatType.Nv21, image.Width, image.Height, null);
+                    yuvImage.CompressToJpeg(new Rect(0, 0, image.Width, image.Height), 75, baOutputStream);
+                    var byteForBitmap = baOutputStream.ToArray();
+                    var bitmapImage = BitmapFactory.DecodeByteArray(byteForBitmap, 0, byteForBitmap.Length);
+
+                    screenshot.SetImageBitmap(bitmapImage);
+                    screenshot.Visibility = ViewStates.Visible;
+                    pizarra.Visibility = ViewStates.Visible;
+                    pizarra.SetImageBitmap(null);
+
+                    var ft = SupportFragmentManager.BeginTransaction();
+                    ft.Hide(arFragment);
+
+                    btnMedicionCopa.Visibility = ViewStates.Visible;
+
+                    if (numberMeditions == 0)
+                        setTextoAyuda("Ahora indique H1");
+                    else if (numberMeditions == 2)
+                        setTextoAyuda("Ahora indique H2");
+                });
+            });
+
+            btnCalcular.Click += ((sender, arg) =>
+            {
+                if (medidas == null)
+                    return;
+
+                //ARService.Current.OnCapturarMedidas(medidas);
+                // cerrar ventana
+            });
+        }
+
+        private void setFrames()
+        {
+
+        }
+        private void setTextoAyuda(string texto)
+        {
+            RunOnUiThread(() => {
+                this.lblAyuda.Text = texto;
+            });
+        }
+        private void habilitarMedicionCopa()
+        {
+            RunOnUiThread(() =>
+            {
+                btnMedicionCopa.Visibility = ViewStates.Visible;
+                lblDistanciaRealTime.Visibility = ViewStates.Visible;
+            });
         }
 
         public void OnUpdate(FrameTime frameTime)
@@ -86,14 +184,9 @@ namespace ARTest.Droid.AR
                 float dz = objectPose.Tz() - cameraPose.Tz();
 
                 ///Compute the straight-line distance.
-                float distanceMeters = (float)Math.Sqrt(dx * dx + dy * dy + dz * dz);
-                tvDistance.Text = "Distance from camera: " + distanceMeters + " metres";
-
-                /*float[] distance_vector = currentAnchor.getPose().inverse()
-                        .compose(cameraPose).getTranslation();
-                float totalDistanceSquared = 0;
-                for (int i = 0; i < 3; ++i)
-                    totalDistanceSquared += distance_vector[i] * distance_vector[i];*/
+                double distanceMeters = Math.Sqrt(dx * dx + dy * dy + dz * dz);
+                distanceMeters = Math.Round(distanceMeters, 2);
+                lblDistanciaRealTime.Text = "Distancia: " + distanceMeters + " m";
             }
         }
 
@@ -104,7 +197,7 @@ namespace ARTest.Droid.AR
 
             if (double.Parse(openGlVersionString) < MIN_OPENGL_VERSION)
             {
-                Toast.MakeText(this, "Sceneform requires OpenGL ES 3.0 or later", ToastLength.Long).Show();
+                Toast.MakeText(this, "Sceneform requiere OpenGL ES 3.0 o superior", ToastLength.Long).Show();
                 this.Finish();
                 return false;
             }
@@ -146,6 +239,9 @@ namespace ARTest.Droid.AR
             arFragment.ArSceneView.Scene.AddOnUpdateListener(this);
             arFragment.ArSceneView.Scene.AddChild(anchorNode);
             node.Select();
+
+            habilitarMedicionCopa();
+            setTextoAyuda("Aléjese hasta encuadrar olivo y pulse 'Medir copa'");
         }
 
         private void clearAnchor()
