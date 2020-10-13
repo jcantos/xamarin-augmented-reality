@@ -17,14 +17,18 @@
         android:layout_height="match_parent"
         android:contentDescription=""
         android:visibility="gone"
-        android:background="#1B90EB"/>
+        android:background="#1B90EB"
+        android:adjustViewBounds="true"
+        android:scaleType="centerCrop" />
 
     <ImageView
         android:id="@+id/pizarra"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:contentDescription=""
-        android:visibility="gone" />
+        android:visibility="gone"
+        android:adjustViewBounds="true"
+        android:scaleType="centerCrop" />
 
     <TextView
         android:id="@+id/lblDistanciaRealTime"

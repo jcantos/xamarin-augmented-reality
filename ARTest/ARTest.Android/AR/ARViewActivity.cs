@@ -62,6 +62,12 @@ namespace ARTest.Droid.AR
 
         MedidasAR medidas;
         int numberMeditions = 0;
+        int numTaps = 0;
+        bool pizarraEnabled;
+        Bitmap imagenPizarra;
+
+        Android.Graphics.Point pointA;
+        Android.Graphics.Point pointB;
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -99,6 +105,7 @@ namespace ARTest.Droid.AR
             setBindings();
             setFrames();
             setTextoAyuda("Acérquese al olivo y seleccione el pie");
+            setTapPizarra();
         }
         private void setBindings()
         {
@@ -124,7 +131,12 @@ namespace ARTest.Droid.AR
                     var byteForBitmap = baOutputStream.ToArray();
                     var bitmapImage = BitmapFactory.DecodeByteArray(byteForBitmap, 0, byteForBitmap.Length);
 
-                    screenshot.SetImageBitmap(bitmapImage);
+                    var matrix = new Android.Graphics.Matrix();
+                    matrix.PostRotate(90);
+                    var rotateImage = Bitmap.CreateBitmap(bitmapImage, 0, 0, bitmapImage.Width, bitmapImage.Height, matrix, true);
+
+                    imagenPizarra = rotateImage;
+                    screenshot.SetImageBitmap(rotateImage);
                     screenshot.Visibility = ViewStates.Visible;
                     pizarra.Visibility = ViewStates.Visible;
                     pizarra.SetImageBitmap(null);
@@ -155,10 +167,78 @@ namespace ARTest.Droid.AR
         {
 
         }
+        private void setTapPizarra()
+        {
+            pizarraEnabled = true;
+
+            pizarra.Touch += ((sender, arg) =>
+            {
+                if (!pizarraEnabled)
+                    return;
+
+                numTaps++;
+
+                int[] viewCords = new int[2];
+                pizarra.GetLocationOnScreen(viewCords);
+                var touchX = (int)arg.Event.GetX();
+                var touchY = (int)arg.Event.GetY();
+                var posX = touchX - viewCords[0];
+                var posY = touchY - viewCords[1];
+
+                if (numTaps == 1)
+                {
+                    setVisibilityMidiendo(true);
+                    pointA = new Android.Graphics.Point((int)posX, (int)posY);
+                    drawPointPizarra(pointA);
+                }
+                else if (numTaps == 2)
+                {
+                    setVisibilityMidiendo(false);
+                    pointB = new Android.Graphics.Point((int)posX, (int)posY);
+
+                    numTaps = 0;
+                    numberMeditions++;
+                }
+            });
+        }
+        private void drawPointPizarra(Android.Graphics.Point point)
+        {
+            if (imagenPizarra == null)
+                return;
+
+            Paint paint = new Paint();
+            paint.AntiAlias = true;
+            paint.Color = Android.Graphics.Color.Red;
+
+            Bitmap workingBitmap = Bitmap.CreateBitmap(imagenPizarra);
+            Bitmap mutableBitmap = workingBitmap.Copy(Bitmap.Config.Argb8888, true);
+
+            Canvas canvas = new Canvas(mutableBitmap);
+            canvas.DrawCircle(point.X, point.Y, 10, paint);
+
+            imagenPizarra = mutableBitmap;
+            pizarra.SetImageBitmap(mutableBitmap);
+        }
         private void setTextoAyuda(string texto)
         {
             RunOnUiThread(() => {
                 this.lblAyuda.Text = texto;
+            });
+        }
+        private void setVisibilityMidiendo(bool visible)
+        {
+            RunOnUiThread(() =>
+            {
+                if (visible)
+                {
+                    lblMidiendo.Text = "Pulse para indicar punto final ...";
+                    lblMidiendo.Visibility = ViewStates.Visible;
+                }
+                else
+                {
+                    lblMidiendo.Text = "";
+                    lblMidiendo.Visibility = ViewStates.Gone;
+                }
             });
         }
         private void habilitarMedicionCopa()
