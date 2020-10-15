@@ -9,6 +9,7 @@ using System.Text;
 using Android.App;
 using Android.Content;
 using Android.Graphics;
+using Android.Graphics.Drawables;
 using Android.Hardware.Camera2;
 using Android.Media;
 using Android.Opengl;
@@ -50,7 +51,7 @@ namespace ARTest.Droid.AR
         Anchor currentAnchor = null;
 
         ImageView screenshot;
-        ImageView pizarra;
+        Pizarra pizarra;
         TextView lblDistanciaRealTime;
         Button btnCalcular;
         Button btnContinuar;
@@ -92,7 +93,7 @@ namespace ARTest.Droid.AR
             lblH = (TextView)FindViewById(Resource.Id.lblH);
             lblD = (TextView)FindViewById(Resource.Id.lblD);
             screenshot = (ImageView)FindViewById(Resource.Id.screenshot);
-            pizarra = (ImageView)FindViewById(Resource.Id.pizarra);
+            pizarra = (Pizarra)FindViewById(Resource.Id.pizarra);
 
             initModel();
 
@@ -178,18 +179,17 @@ namespace ARTest.Droid.AR
 
                 numTaps++;
 
-                int[] viewCords = new int[2];
-                pizarra.GetLocationOnScreen(viewCords);
                 var touchX = (int)arg.Event.GetX();
                 var touchY = (int)arg.Event.GetY();
-                var posX = touchX - viewCords[0];
-                var posY = touchY - viewCords[1];
+                var posX = touchX;
+                var posY = touchY;
 
                 if (numTaps == 1)
                 {
                     setVisibilityMidiendo(true);
                     pointA = new Android.Graphics.Point((int)posX, (int)posY);
-                    drawPointPizarra(pointA);
+                    pizarra.Point = pointA;
+                    //drawPointPizarra(pointA);
                 }
                 else if (numTaps == 2)
                 {
@@ -199,6 +199,8 @@ namespace ARTest.Droid.AR
                     numTaps = 0;
                     numberMeditions++;
                 }
+
+                pizarra.Invalidate();
             });
         }
         private void drawPointPizarra(Android.Graphics.Point point)
@@ -210,18 +212,18 @@ namespace ARTest.Droid.AR
             paint.AntiAlias = true;
             paint.Color = Android.Graphics.Color.Red;
 
-            Bitmap workingBitmap = Bitmap.CreateBitmap(imagenPizarra);
-            Bitmap mutableBitmap = workingBitmap.Copy(Bitmap.Config.Argb8888, true);
+            Bitmap bitmap = ((BitmapDrawable)screenshot.Drawable).Bitmap.Copy(Bitmap.Config.Argb8888, true);
 
-            Canvas canvas = new Canvas(mutableBitmap);
+            Canvas canvas = new Canvas(bitmap);
             canvas.DrawCircle(point.X, point.Y, 10, paint);
 
-            imagenPizarra = mutableBitmap;
-            pizarra.SetImageBitmap(mutableBitmap);
+            imagenPizarra = bitmap;
+            pizarra.SetImageBitmap(bitmap);
         }
         private void setTextoAyuda(string texto)
         {
-            RunOnUiThread(() => {
+            RunOnUiThread(() =>
+            {
                 this.lblAyuda.Text = texto;
             });
         }
@@ -352,5 +354,30 @@ namespace ARTest.Droid.AR
             }
         }
 
+        public class Pizarra : ImageView
+        {
+            public Android.Graphics.Point Point { get; set; }
+            public Pizarra(Context context) : base(context, null)
+            {
+            }
+
+            public Pizarra(Context context, IAttributeSet attributeSet) : base(context, attributeSet)
+            {
+            }
+
+            protected override void OnDraw(Canvas canvas)
+            {
+                base.OnDraw(canvas);
+
+                if (Point != null)
+                {
+                    Paint paint = new Paint();
+                    paint.AntiAlias = true;
+                    paint.Color = Android.Graphics.Color.Red;
+
+                    canvas.DrawCircle(Point.X, Point.Y, 25, paint);
+                }
+            }
+        }
     }
 }
