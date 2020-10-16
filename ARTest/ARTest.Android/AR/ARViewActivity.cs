@@ -336,7 +336,7 @@ namespace ARTest.Droid.AR
         }
         private double calculateDistance(Android.Graphics.Point pointA, Android.Graphics.Point pointB, double distanciaAlArbolEnMetros)
         {
-            const double CALIBRACION = 0.0015;
+            const double CALIBRACION = 0.0616;
             double reply = 0;
 
             if (pointA == null)
@@ -350,7 +350,8 @@ namespace ARTest.Droid.AR
             var y1 = pointB.Y;
 
             reply = Math.Sqrt(Math.Pow(x1 - x0, 2) + Math.Pow(y1 - y0, 2)); // distancia en pixels entre punto A y B
-            reply = reply * distanciaAlArbolEnMetros * CALIBRACION; // conversión a metros
+            reply = reply * distanciaAlArbolEnMetros;
+            reply = reply * CALIBRACION; // conversión a metros
 
             return reply;
         }
