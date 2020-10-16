@@ -115,6 +115,7 @@ namespace ARTest.Droid.AR
                 RunOnUiThread(() =>
                 {
                     var image = arFragment.ArSceneView.ArFrame.AcquireCameraImage();
+                    arFragment.ArSceneView.Pause();
 
                     var cameraPlaneY = image.GetPlanes()[0].Buffer;
                     var cameraPlaneU = image.GetPlanes()[1].Buffer;
@@ -163,6 +164,7 @@ namespace ARTest.Droid.AR
 
                     var ft = SupportFragmentManager.BeginTransaction();
                     ft.Show(arFragment);
+                    arFragment.ArSceneView.Resume();
 
                     btnMedicionCopa.Visibility = ViewStates.Visible;
                     setTextoAyuda("Sitúese en perpendicular y pulse 'Medir copa'");
@@ -412,6 +414,8 @@ namespace ARTest.Droid.AR
                 double distanceMeters = Math.Sqrt(dx * dx + dy * dy + dz * dz);
                 distanceMeters = Math.Round(distanceMeters, 2);
                 lblDistanciaRealTime.Text = "Distancia: " + distanceMeters + " m";
+
+                medidas.DistanciaAlArbol = distanceMeters;
             }
         }
 
