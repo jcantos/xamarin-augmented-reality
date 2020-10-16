@@ -145,12 +145,28 @@ namespace ARTest.Droid.AR
                     var ft = SupportFragmentManager.BeginTransaction();
                     ft.Hide(arFragment);
 
-                    btnMedicionCopa.Visibility = ViewStates.Visible;
+                    btnMedicionCopa.Visibility = ViewStates.Gone;
 
                     if (numberMeditions == 0)
                         setTextoAyuda("Ahora indique H1");
                     else if (numberMeditions == 2)
                         setTextoAyuda("Ahora indique H2");
+                });
+            });
+
+            btnContinuar.Click += ((sender, arg) =>
+            {
+                RunOnUiThread(() =>
+                {
+                    screenshot.Visibility = ViewStates.Gone;
+                    pizarra.Visibility = ViewStates.Gone;
+
+                    var ft = SupportFragmentManager.BeginTransaction();
+                    ft.Show(arFragment);
+
+                    btnMedicionCopa.Visibility = ViewStates.Visible;
+                    setTextoAyuda("Sitúese en perpendicular y pulse 'Medir copa'");
+                    clearPizarra();
                 });
             });
 
@@ -164,9 +180,64 @@ namespace ARTest.Droid.AR
             });
         }
 
+        private void clearPizarra()
+        {
+            btnContinuar.Visibility = ViewStates.Gone;
+            btnCalcular.Visibility = ViewStates.Gone;
+            lblH.Visibility = ViewStates.Gone;
+            lblD.Visibility = ViewStates.Gone;
+            pizarraEnabled = true;
+
+            pizarra.TypeDraw = "";
+            pizarra.PointA = null;
+            pizarra.PointB = null;
+            pizarra.SetImageBitmap(null);
+        }
+
         private void setFrames()
         {
+            var lpDistanciaRealTime = (RelativeLayout.LayoutParams)lblDistanciaRealTime.LayoutParameters;
+            lpDistanciaRealTime.TopMargin = 80;
+            lblDistanciaRealTime.LayoutParameters = lpDistanciaRealTime;
 
+            var lpBtnCalcular = (RelativeLayout.LayoutParams)btnCalcular.LayoutParameters;
+            lpBtnCalcular.TopMargin = Resources.DisplayMetrics.HeightPixels - 165;
+            btnCalcular.LayoutParameters = lpBtnCalcular;
+
+            var lpBtnMedicionCopa = (RelativeLayout.LayoutParams)btnMedicionCopa.LayoutParameters;
+            lpBtnMedicionCopa.TopMargin = Resources.DisplayMetrics.HeightPixels - 165;
+            btnMedicionCopa.LayoutParameters = lpBtnMedicionCopa;
+
+            var lpBtnContinuar = (RelativeLayout.LayoutParams)btnContinuar.LayoutParameters;
+            lpBtnContinuar.TopMargin = Resources.DisplayMetrics.HeightPixels - 165;
+            btnContinuar.LayoutParameters = lpBtnContinuar;
+
+            var lpH = (RelativeLayout.LayoutParams)lblH.LayoutParameters;
+            lpH.TopMargin = 180;
+            lblH.LayoutParameters = lpH;
+
+            var lpD = (RelativeLayout.LayoutParams)lblD.LayoutParameters;
+            lpD.TopMargin = 250;
+            lblD.LayoutParameters = lpD;
+
+            var lpMidiendo = (RelativeLayout.LayoutParams)lblMidiendo.LayoutParameters;
+            lpMidiendo.TopMargin = 80;
+            lblMidiendo.LayoutParameters = lpMidiendo;
+
+            lblDistanciaRealTime.SetBackgroundColor(Android.Graphics.Color.ParseColor("#FFCE45"));
+            lblDistanciaRealTime.SetTextColor(Android.Graphics.Color.ParseColor("#000000"));
+
+            lblH.SetBackgroundColor(Android.Graphics.Color.ParseColor("#FFCE45"));
+            lblH.SetTextColor(Android.Graphics.Color.ParseColor("#000000"));
+
+            lblD.SetBackgroundColor(Android.Graphics.Color.ParseColor("#FFCE45"));
+            lblD.SetTextColor(Android.Graphics.Color.ParseColor("#000000"));
+
+            lblMidiendo.SetBackgroundColor(Android.Graphics.Color.ParseColor("#FFCE45"));
+            lblMidiendo.SetTextColor(Android.Graphics.Color.ParseColor("#000000"));
+
+            lblAyuda.SetBackgroundColor(Android.Graphics.Color.ParseColor("#FB5C00"));
+            lblAyuda.SetTextColor(Android.Graphics.Color.ParseColor("#ffffff"));
         }
         private void setTapPizarra()
         {
@@ -177,30 +248,40 @@ namespace ARTest.Droid.AR
                 if (!pizarraEnabled)
                     return;
 
-                numTaps++;
-
-                var touchX = (int)arg.Event.GetX();
-                var touchY = (int)arg.Event.GetY();
-                var posX = touchX;
-                var posY = touchY;
-
-                if (numTaps == 1)
+                if (arg.Event.Action == MotionEventActions.Down)
                 {
-                    setVisibilityMidiendo(true);
-                    pointA = new Android.Graphics.Point((int)posX, (int)posY);
-                    pizarra.Point = pointA;
-                    //drawPointPizarra(pointA);
-                }
-                else if (numTaps == 2)
-                {
-                    setVisibilityMidiendo(false);
-                    pointB = new Android.Graphics.Point((int)posX, (int)posY);
+                    numTaps++;
 
-                    numTaps = 0;
-                    numberMeditions++;
+                    var touchX = (int)arg.Event.GetX();
+                    var touchY = (int)arg.Event.GetY();
+                    var posX = touchX;
+                    var posY = touchY;
+
+                    if (numTaps == 1)
+                    {
+                        setVisibilityMidiendo(true);
+                        pointA = new Android.Graphics.Point((int)posX, (int)posY);
+                        pizarra.PointA = pointA;
+                        pizarra.TypeDraw = "circle";
+                        pizarra.Invalidate();
+                    }
+                    else if (numTaps == 2)
+                    {
+                        setVisibilityMidiendo(false);
+                        pointB = new Android.Graphics.Point((int)posX, (int)posY);
+                        numTaps = 0;
+                        numberMeditions++;
+
+                        pizarra.PointA = pointA;
+                        pizarra.PointB = pointB;
+                        pizarra.TypeDraw = "line";
+                        pizarra.Invalidate();
+
+                        var distance = calculateDistance(pointA, pointB, medidas.DistanciaAlArbol);
+                        addDistanceText(distance);
+                    }
                 }
 
-                pizarra.Invalidate();
             });
         }
         private void drawPointPizarra(Android.Graphics.Point point)
@@ -249,6 +330,68 @@ namespace ARTest.Droid.AR
             {
                 btnMedicionCopa.Visibility = ViewStates.Visible;
                 lblDistanciaRealTime.Visibility = ViewStates.Visible;
+            });
+        }
+        private double calculateDistance(Android.Graphics.Point pointA, Android.Graphics.Point pointB, double distanciaAlArbolEnMetros)
+        {
+            const double CALIBRACION = 0.0015;
+            double reply = 0;
+
+            if (pointA == null)
+                return 0;
+            if (pointB == null)
+                return 0;
+
+            var x0 = pointA.X;
+            var x1 = pointB.X;
+            var y0 = pointA.Y;
+            var y1 = pointB.Y;
+
+            reply = Math.Sqrt(Math.Pow(x1 - x0, 2) + Math.Pow(y1 - y0, 2)); // distancia en pixels entre punto A y B
+            reply = reply * distanciaAlArbolEnMetros * CALIBRACION; // conversión a metros
+
+            return reply;
+        }
+
+        private void addDistanceText(double distance)
+        {
+            string distanceString = Math.Round((distance), 2) + " m";
+
+            RunOnUiThread(() =>
+            {
+                double _distance = Math.Round(distance, 2);
+                if (numberMeditions == 1)
+                {
+                    medidas.CopaH = distance;
+                    lblH.Text = "H1: " + distanceString;
+                    lblH.Visibility = ViewStates.Visible;
+                    setTextoAyuda("Ahora indique D1");
+                }
+                else if (numberMeditions == 2)
+                {
+                    medidas.CopaD1 = distance;
+                    lblD.Text = "D1: " + distanceString;
+                    lblD.Visibility = ViewStates.Visible;
+                    pizarraEnabled = false;
+                    btnContinuar.Visibility = ViewStates.Visible;
+                    setTextoAyuda("Pulse botón Continuar para medir D2");
+                }
+                else if (numberMeditions == 3)
+                {
+                    medidas.CopaH = (distance + medidas.CopaH) / 2;
+                    lblH.Text = "H2: " + distanceString;
+                    lblH.Visibility = ViewStates.Visible;
+                    setTextoAyuda("Ahora indique D2");
+                }
+                else if (numberMeditions == 4)
+                {
+                    medidas.CopaD2 = distance;
+                    lblD.Text = "D2: " + distanceString;
+                    lblD.Visibility = ViewStates.Visible;
+                    pizarraEnabled = false;
+                    btnCalcular.Visibility = ViewStates.Visible;
+                    setTextoAyuda("¡Listo!, pulse sobre el botón Calcular");
+                }
             });
         }
 
@@ -356,7 +499,9 @@ namespace ARTest.Droid.AR
 
         public class Pizarra : ImageView
         {
-            public Android.Graphics.Point Point { get; set; }
+            public Android.Graphics.Point PointA { get; set; }
+            public Android.Graphics.Point PointB { get; set; }
+            public string TypeDraw { get; set; }
             public Pizarra(Context context) : base(context, null)
             {
             }
@@ -369,13 +514,28 @@ namespace ARTest.Droid.AR
             {
                 base.OnDraw(canvas);
 
-                if (Point != null)
+                if (TypeDraw == "circle")
                 {
-                    Paint paint = new Paint();
-                    paint.AntiAlias = true;
-                    paint.Color = Android.Graphics.Color.Red;
+                    if (PointA != null)
+                    {
+                        Paint paint = new Paint();
+                        paint.AntiAlias = true;
+                        paint.Color = Android.Graphics.Color.Red;
 
-                    canvas.DrawCircle(Point.X, Point.Y, 25, paint);
+                        canvas.DrawCircle(PointA.X, PointA.Y, 25, paint);
+                    }
+                }
+                else if (TypeDraw == "line")
+                {
+                    if (PointA != null && PointB != null)
+                    {
+                        Paint paint = new Paint();
+                        paint.AntiAlias = true;
+                        paint.Color = Android.Graphics.Color.Red;
+                        paint.StrokeWidth = 10;
+
+                        canvas.DrawLine(PointA.X, PointA.Y, PointB.X, PointB.Y, paint);
+                    }
                 }
             }
         }
